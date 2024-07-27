@@ -1,0 +1,5 @@
+psutil~=6.0.0
+pydantic>=2.5.3  # latest available for python3.7
+textual>=0.43.2  # latest available for python3.7
+textual-plotext~=0.2.1
+traces>=0.6.0  # latest available for python3.7
