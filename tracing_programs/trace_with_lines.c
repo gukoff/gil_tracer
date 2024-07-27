@@ -10,7 +10,7 @@ BPF_HASH(py_context, u64, struct python_line_context_t);
 struct data_t {
     u64 thread_id;
     u64 timestamp;
-    u8 holds_gil;  // false if dropped GIL
+    u8 event_type;  // 0 if started waiting for GIL, 1 if took GIL, 2 if dropped GIL
     char filename[64];
     char function[64];
     u32 line_number;
@@ -18,24 +18,26 @@ struct data_t {
 
 BPF_PERF_OUTPUT(events);
 
-static int emit_event(struct pt_regs *ctx, u8 holds_gil) {
-    u64 curr_tid = bpf_get_current_pid_tgid() & 0x00000000FFFFFFFF;
+static int emit_event(struct pt_regs *ctx, u8 event_type, bool include_location) {
     u64 now = bpf_ktime_get_ns();
+    u64 curr_tid = bpf_get_current_pid_tgid() & 0x00000000FFFFFFFF;
 
     struct data_t data = {};
     data.thread_id = curr_tid;
     data.timestamp = now;
-    data.holds_gil = holds_gil;
+    data.event_type = event_type;
 
-    struct python_line_context_t* thread_py_context = py_context.lookup(&curr_tid);
-    if (thread_py_context) {
-        for (u32 i = 0; i < sizeof(data.filename); ++i) {
-            data.filename[i] = thread_py_context->filename[i];
+    if (include_location) {
+        struct python_line_context_t* thread_py_context = py_context.lookup(&curr_tid);
+        if (thread_py_context) {
+            for (u32 i = 0; i < sizeof(data.filename); ++i) {
+                data.filename[i] = thread_py_context->filename[i];
+            }
+            for (u32 i = 0; i < sizeof(data.function); ++i) {
+                data.function[i] = thread_py_context->function[i];
+            }
+            data.line_number = thread_py_context->line_number;
         }
-        for (u32 i = 0; i < sizeof(data.function); ++i) {
-            data.function[i] = thread_py_context->function[i];
-        }
-        data.line_number = thread_py_context->line_number;
     }
 
     events.perf_submit(ctx, &data, sizeof(data));
@@ -44,13 +46,17 @@ static int emit_event(struct pt_regs *ctx, u8 holds_gil) {
     return 0;
 }
 
-int take_gil_exit(struct pt_regs *ctx) {
-    return emit_event(ctx, /* holds_gil */ 1);
+
+int take_gil_entry(struct pt_regs *ctx) {
+    return emit_event(ctx, /* event_type */ 0, /*include_location*/ true);
 };
 
+int take_gil_exit(struct pt_regs *ctx) {
+    return emit_event(ctx, /* event_type */ 1, /*include_location*/ false);
+};
 
 int drop_gil_entry(struct pt_regs *ctx) {
-    return emit_event(ctx, /* holds_gil */ 0);
+    return emit_event(ctx, /* event_type */ 2, /*include_location*/ false);
 };
 
 
