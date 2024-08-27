@@ -1,5 +1,6 @@
 import threading
-from sys import argv
+import argparse
+from time import sleep
 
 
 def some_func1():
@@ -16,16 +17,32 @@ def do_nothing():
         some_func2()
 
 
-def main():
-    worker_count = 2 if len(argv) < 2 else int(argv[1])
+def do_sleep():
+    while True:
+        sleep(1)
 
-    workers = [
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--sleepers", type=int, default=1, help="Number of sleeper threads")
+    parser.add_argument("--workers", type=int, default=2, help="Number of worker threads")
+    args = parser.parse_args()
+
+    sleeper_count = args.sleepers
+    worker_count = args.workers
+
+    print(f"Starting {sleeper_count} sleepers and {worker_count} workers")
+
+    threads = [
         threading.Thread(target=do_nothing, daemon=True) for _ in range(worker_count)
+    ] + [
+        threading.Thread(target=do_sleep, daemon=True) for _ in range(sleeper_count)
     ]
-    for w in workers:
+
+    for w in threads:
         w.start()
 
-    for w in workers:
+    for w in threads:
         w.join()
 
 

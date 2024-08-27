@@ -238,7 +238,6 @@ class Legend(Widget):
         self.query_one("#last_update", Label).update(
             f"[b]Last update[/]: {last_update.strftime('%H:%M:%S')}"
         )
-        
 
 
 class TerminalUI(App):
