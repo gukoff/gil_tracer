@@ -1,4 +1,4 @@
-uretprobe:/home/gukov/.pyenv/versions/3.10.14/lib/libpython3.10.so.1.0:take_gil*
+uretprobe:*:take_gil*
 {
     printf(
         "%d|take|%s\n",
@@ -7,7 +7,7 @@ uretprobe:/home/gukov/.pyenv/versions/3.10.14/lib/libpython3.10.so.1.0:take_gil*
     )
 }
 
-uprobe:/home/gukov/.pyenv/versions/3.10.14/lib/libpython3.10.so.1.0:drop_gil*
+uprobe:*:drop_gil*
 {
     printf(
         "%d|drop|%s\n",
