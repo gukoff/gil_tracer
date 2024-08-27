@@ -1,3 +1,4 @@
+from pathlib import Path
 from queue import Queue
 from models.models import Event, ThreadState
 
@@ -12,8 +13,8 @@ class GilWithLinesBccTracer:
         # and wants to trace using bpftrace
         from bcc import BPF, USDT
 
-        with open("./tracing_programs/trace_with_lines.c") as fin:
-            code = fin.read()
+        code_file = Path(__file__).parent.parent / "tracing_programs" / "trace_with_lines.c"
+        code = code_file.read_text()
 
         usdt = USDT(pid=self.pid)
         usdt.enable_probe(probe="line", fn_name="trace_line")

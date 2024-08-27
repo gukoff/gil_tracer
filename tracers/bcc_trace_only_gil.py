@@ -1,3 +1,4 @@
+from pathlib import Path
 from queue import Queue
 from models.models import ThreadState, Event
 
@@ -12,8 +13,8 @@ class OnlyGilBccTracer:
         # and wants to trace using bpftrace
         from bcc import BPF
 
-        with open("./tracing_programs/trace_only_gil.c") as fin:
-            code = fin.read()
+        code_file = Path(__file__).parent.parent / "tracing_programs" / "trace_only_gil.c"
+        code = code_file.read_text()
 
         bpf = BPF(text=code, cflags=["-Wno-macro-redefined"])
 
